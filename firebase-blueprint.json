@@ -1,0 +1,76 @@
+{
+  "entities": {
+    "WorkspaceState": {
+      "title": "WorkspaceState",
+      "description": "Shared real-time application state for Clacket Frame including config, photographers, projects, shoots, ideas, and notifications.",
+      "type": "object",
+      "properties": {
+        "config": {
+          "type": "object",
+          "description": "Application configuration and admin credentials."
+        },
+        "projects": {
+          "type": "array",
+          "description": "List of active project names."
+        },
+        "photographers": {
+          "type": "array",
+          "description": "Registered field photographers and their PIN credentials."
+        },
+        "shoots": {
+          "type": "array",
+          "description": "Submitted shoot orders and their editing statuses."
+        },
+        "ideas": {
+          "type": "array",
+          "description": "Creative shoot ideas and angles."
+        },
+        "audioTasks": {
+          "type": "array",
+          "description": "Voiceover and audio tasks."
+        },
+        "photographerNotifications": {
+          "type": "array",
+          "description": "Real-time notifications sent to photographers."
+        },
+        "activeReminder": {
+          "type": "string",
+          "description": "Active reminder text for the director."
+        },
+        "activeReminderShootId": {
+          "type": "string",
+          "description": "Target shoot ID for the active reminder."
+        },
+        "reminderSchedule": {
+          "type": "object",
+          "description": "Configured reminder interval settings."
+        },
+        "counterConfig": {
+          "type": "object",
+          "description": "Achievements and custom counter configuration."
+        },
+        "lastUpdated": {
+          "type": "number",
+          "description": "Epoch timestamp in milliseconds of the last state update."
+        }
+      },
+      "required": [
+        "config",
+        "projects",
+        "photographers",
+        "shoots",
+        "ideas",
+        "audioTasks",
+        "lastUpdated"
+      ]
+    }
+  },
+  "firestore": {
+    "/workspaces/{workspaceId}": {
+      "schema": {
+        "$ref": "#/entities/WorkspaceState"
+      },
+      "description": "Main synchronized workspace state shared across Director and Photographer devices."
+    }
+  }
+}

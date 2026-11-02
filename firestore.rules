@@ -1,0 +1,63 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function isValidWorkspaceState(data) {
+      return data.keys().hasAll([
+        'config',
+        'projects',
+        'photographers',
+        'shoots',
+        'ideas',
+        'audioTasks',
+        'lastUpdated'
+      ]) &&
+      data.keys().hasOnly([
+        'config',
+        'projects',
+        'photographers',
+        'shoots',
+        'ideas',
+        'audioTasks',
+        'photographerNotifications',
+        'activeReminder',
+        'activeReminderShootId',
+        'reminderSchedule',
+        'counterConfig',
+        'lastUpdated'
+      ]) &&
+      data.config is map &&
+      data.projects is list && data.projects.size() <= 200 &&
+      data.photographers is list && data.photographers.size() <= 200 &&
+      data.shoots is list && data.shoots.size() <= 1000 &&
+      data.ideas is list && data.ideas.size() <= 500 &&
+      data.audioTasks is list && data.audioTasks.size() <= 500 &&
+      data.lastUpdated is number;
+    }
+
+    // Connection test endpoint
+    match /test/{testId} {
+      allow get: if isValidId(testId);
+    }
+
+    // Shared real-time workspace document for Clacket Frame
+    match /workspaces/{workspaceId} {
+      allow get: if workspaceId == 'clacket_frame_main';
+      allow create: if workspaceId == 'clacket_frame_main' && isValidWorkspaceState(incoming());
+      allow update: if workspaceId == 'clacket_frame_main' && isValidWorkspaceState(incoming());
+    }
+  }
+}

@@ -13,8 +13,18 @@ import {
   updatePhotographerSelfCredentials,
   verifyAccountPin,
 } from './utils/clacketLogic';
+import {
+  fetchWorkspaceStateFromFirestore,
+  saveWorkspaceStateToFirestore,
+  subscribeToWorkspaceState,
+  testFirestoreConnection,
+} from './firebase';
 import { playBeep } from './utils/sound';
-import { sendNativeMobileNotification } from './utils/pwaNotifications';
+import {
+  registerClacketServiceWorker,
+  sendNativeMobileNotification,
+  syncDirectorShootsWithServiceWorker,
+} from './utils/pwaNotifications';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { PinModal } from './components/PinModal';
 import { ReminderPopup } from './components/ReminderPopup';
@@ -22,28 +32,17 @@ import { Header } from './components/Header';
 import { DirectorView } from './components/DirectorView';
 import { PhotographerView } from './components/PhotographerView';
 
-const LOCAL_STORAGE_KEY = 'clacket_frame_state_v1';
+const LEGACY_LOCAL_STATE_KEY = 'clacket_frame_state_v1';
 const SESSION_STORAGE_KEY = 'clacket_active_session_v1';
 
 export default function App() {
-  const [appState, setAppState] = useState<AppState>(() => {
-    try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved) as Partial<AppState>;
-        if (parsed && parsed.config && Array.isArray(parsed.projects)) {
-          const cleaned = normalizeAppState(parsed);
-          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cleaned));
-          return cleaned;
-        }
-      }
-    } catch {
-      // ignore storage errors
-    }
-    return normalizeAppState(INITIAL_APP_STATE);
-  });
+  // App state is strictly backed by Firebase Cloud Firestore (no localStorage caching of app data)
+  const [appState, setAppState] = useState<AppState>(() =>
+    normalizeAppState(INITIAL_APP_STATE)
+  );
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
-  // Determine initial session from query params or persisted session in localStorage
+  // Determine initial logged-in user session
   const [activeSession, setActiveSession] = useState<{
     role: 'welcome' | 'director' | 'photographer';
     photographer?: Photographer;
@@ -62,7 +61,7 @@ export default function App() {
         return resolvePersistedSession(parsedSession, appState);
       }
     } catch {
-      // ignore storage errors
+      // ignore session parse errors
     }
     return { role: 'welcome' };
   });
@@ -82,9 +81,12 @@ export default function App() {
     null
   );
 
-  const lastShootCountRef = useRef<number>(appState.shoots.length);
+  const knownShootIdsRef = useRef<Set<string>>(new Set());
+  const isFirstSnapshotRef = useRef<boolean>(true);
   const seenPhotographerNotifIdsRef = useRef<Set<string>>(new Set());
   const toastTimerRef = useRef<number | null>(null);
+  const activeSessionRef = useRef(activeSession);
+  activeSessionRef.current = activeSession;
 
   const showToast = useCallback(
     (msg: string, alsoSystemNotify = false, targetShootId?: string | null) => {
@@ -92,18 +94,28 @@ export default function App() {
       setToastTargetShootId(targetShootId ?? null);
       playBeep();
       if (alsoSystemNotify) {
-        sendNativeMobileNotification('🎬 كلاكيت فريم | إشعار فوري', msg);
+        sendNativeMobileNotification(
+          '🎬 كلاكيت فريم | إشعار فوري',
+          msg,
+          targetShootId ? `shoot-${targetShootId}` : 'clacket-frame-alert',
+          targetShootId
+        );
       }
       if (toastTimerRef.current) {
         window.clearTimeout(toastTimerRef.current);
       }
       toastTimerRef.current = window.setTimeout(() => {
         setToastMessage(null);
-      }, 6500);
+      }, 7500);
     },
     []
   );
 
+  /**
+   * Central state updater: writes directly to Firebase Cloud Firestore
+   * and mirrors to /api/state for the background Service Worker watcher.
+   * Does NOT use localStorage for application data.
+   */
   const updateAppState = useCallback(
     (
       updater: (prev: AppState) => AppState,
@@ -113,22 +125,25 @@ export default function App() {
     ) => {
       setAppState((prev) => {
         const next: AppState = {
-          ...updater(prev),
+          ...normalizeAppState(updater(prev)),
           lastUpdated: Date.now(),
         };
-        lastShootCountRef.current = next.shoots.length;
-        try {
-          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(next));
-        } catch {
-          // ignore
+
+        for (const s of next.shoots) {
+          knownShootIdsRef.current.add(s.id);
         }
+
+        // 1. Primary authoritative write to Firebase Cloud Firestore
+        saveWorkspaceStateToFirestore(next)
+          .then(() => setCloudConnected(true))
+          .catch(() => setCloudConnected(false));
+
+        // 2. Mirror to backend /api/state so Service Worker background notifications stay synced
         fetch('/api/state', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ state: next }),
-        })
-          .then((r) => setCloudConnected(r.ok))
-          .catch(() => setCloudConnected(false));
+        }).catch(() => {});
 
         return next;
       });
@@ -172,7 +187,216 @@ export default function App() {
     ]
   );
 
-  // Respect the user's configured reminder schedule strictly (no frequent spam!)
+  const handleNavigateRef = useRef(handleNavigateToNotificationTask);
+  handleNavigateRef.current = handleNavigateToNotificationTask;
+
+  // Process incoming state from Firebase Cloud Firestore (onSnapshot or manual refresh)
+  const applyIncomingFirestoreState = useCallback(
+    (remote: AppState, isManualRefresh = false) => {
+      const session = activeSessionRef.current;
+      const incomingPendingShoots = remote.shoots.filter((s) => s.status !== 'completed');
+
+      if (isFirstSnapshotRef.current) {
+        isFirstSnapshotRef.current = false;
+        for (const s of remote.shoots) {
+          knownShootIdsRef.current.add(s.id);
+        }
+        // If Director opens the app and there are pending shoot orders waiting, alert immediately
+        if (session.role === 'director' && incomingPendingShoots.length > 0) {
+          const latestPending = incomingPendingShoots[0];
+          showToast(
+            `🔔 لديك (${incomingPendingShoots.length}) أوردر مونتاج بانتظار العمل! آخرها من (${latestPending.photographerName}) لمشروع (${latestPending.project}) — اضغط للانتقال إليه.`,
+            true,
+            latestPending.id
+          );
+          if (remote.activeReminder) {
+            setShowReminderModal(true);
+          }
+        }
+      } else {
+        // Detect any brand-new shoot orders submitted by photographers
+        const newlyArrivedShoots = remote.shoots.filter(
+          (s) => !knownShootIdsRef.current.has(s.id)
+        );
+        for (const s of remote.shoots) {
+          knownShootIdsRef.current.add(s.id);
+        }
+
+        if (newlyArrivedShoots.length > 0 && session.role !== 'photographer') {
+          const newest = newlyArrivedShoots[0];
+          showToast(
+            `🔔 وصل أوردر مونتاج جديد الآن من (${newest.photographerName}) لمشروع (${newest.project}): ${newest.field1Value} — اضغط للانتقال إليه!`,
+            true,
+            newest.id
+          );
+          setShowReminderModal(true);
+        } else if (isManualRefresh) {
+          if (session.role === 'director' && incomingPendingShoots.length > 0) {
+            const latest = incomingPendingShoots[0];
+            showToast(
+              `🔄 تم التحديث من Firestore: لديك (${incomingPendingShoots.length}) أوردر مونتاج بانتظار العمل (${latest.project} - ${latest.photographerName})`,
+              false,
+              latest.id
+            );
+          } else {
+            showToast('✅ تم التحديث الفوري من قاعدة بيانات Firestore — جميع البيانات والإشعارات محدّثة!');
+          }
+        }
+
+        // Check for unread notifications sent to the active photographer
+        if (session.role === 'photographer' && session.photographer) {
+          const currentPhotog = session.photographer;
+          const unreadForMe = (remote.photographerNotifications || []).filter(
+            (n) =>
+              !n.read &&
+              (n.photographerId === currentPhotog.id ||
+                n.photographerName === currentPhotog.name)
+          );
+          const newestNotif = unreadForMe.find(
+            (n) => !seenPhotographerNotifIdsRef.current.has(n.id)
+          );
+          if (newestNotif) {
+            seenPhotographerNotifIdsRef.current.add(newestNotif.id);
+            showToast(newestNotif.message, true);
+          }
+        }
+      }
+
+      setAppState(remote);
+
+      // Keep backend /api/state mirrored for background Service Worker checks
+      fetch('/api/state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: remote }),
+      }).catch(() => {});
+
+      // Sync known shoot IDs with Service Worker for background notifications when app is closed/minimized
+      syncDirectorShootsWithServiceWorker(
+        session.role === 'director',
+        remote.shoots.map((s) => s.id)
+      );
+    },
+    [showToast]
+  );
+
+  // Manual Refresh from Firebase Cloud Firestore
+  const handleManualRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      const freshState = await fetchWorkspaceStateFromFirestore();
+      if (freshState) {
+        setCloudConnected(true);
+        applyIncomingFirestoreState(freshState, true);
+      } else {
+        const res = await fetch('/api/state');
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.state) {
+            const seeded = normalizeAppState(data.state);
+            await saveWorkspaceStateToFirestore(seeded);
+            applyIncomingFirestoreState(seeded, true);
+          }
+        }
+      }
+    } catch {
+      setCloudConnected(false);
+      showToast('⚠️ تعذر الاتصال بالسحابة حالياً، يرجى التحقق من اتصال الإنترنت');
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [applyIncomingFirestoreState, showToast]);
+
+  // Boot: Purge legacy localStorage cache, register Service Worker, validate connection, and subscribe to Firestore
+  useEffect(() => {
+    try {
+      localStorage.removeItem(LEGACY_LOCAL_STATE_KEY);
+    } catch {
+      // ignore
+    }
+
+    registerClacketServiceWorker();
+    testFirestoreConnection();
+
+    // Listen to Service Worker messages when clicking an OS notification
+    const handleSwMessage = (event: MessageEvent) => {
+      if (
+        event.data &&
+        event.data.type === 'FOCUS_SHOOT_FROM_NOTIFICATION' &&
+        event.data.shootId
+      ) {
+        handleNavigateRef.current(event.data.shootId);
+      }
+    };
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', handleSwMessage);
+    }
+
+    let isMounted = true;
+
+    // Real-time Firestore listener (onSnapshot)
+    const unsubscribe = subscribeToWorkspaceState(
+      (remoteState) => {
+        if (!isMounted) return;
+        applyIncomingFirestoreState(remoteState, false);
+      },
+      async () => {
+        // Document does not exist yet in Firestore -> seed from existing server state so no photographers/projects are lost
+        if (!isMounted) return;
+        try {
+          const res = await fetch('/api/state');
+          const data = res.ok ? await res.json() : null;
+          const initialSeed = normalizeAppState(data?.state || INITIAL_APP_STATE);
+          await saveWorkspaceStateToFirestore(initialSeed);
+          if (isMounted) {
+            applyIncomingFirestoreState(initialSeed, false);
+          }
+        } catch {
+          const fallbackSeed = normalizeAppState(INITIAL_APP_STATE);
+          saveWorkspaceStateToFirestore(fallbackSeed).catch(() => {});
+        }
+      },
+      (connected) => {
+        if (isMounted) setCloudConnected(connected);
+      }
+    );
+
+    // Also refresh directly from Firestore whenever the user returns to the app from background/outside
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        fetchWorkspaceStateFromFirestore()
+          .then((fresh) => {
+            if (isMounted && fresh) {
+              setCloudConnected(true);
+              applyIncomingFirestoreState(fresh, false);
+            }
+          })
+          .catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.removeEventListener('message', handleSwMessage);
+      }
+    };
+  }, [applyIncomingFirestoreState]);
+
+  // Keep Service Worker background watcher updated whenever active role or shoots change
+  useEffect(() => {
+    syncDirectorShootsWithServiceWorker(
+      activeSession.role === 'director',
+      appState.shoots.map((s) => s.id)
+    );
+  }, [activeSession.role, appState.shoots]);
+
+  // Respect the user's configured reminder schedule strictly
   useEffect(() => {
     if (activeSession.role === 'photographer') return;
 
@@ -220,91 +444,12 @@ export default function App() {
     updateAppState,
   ]);
 
-  // Fetch initial state from backend server & poll for real-time updates
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchCloudState = async () => {
-      try {
-        const res = await fetch('/api/state');
-        if (!res.ok) throw new Error('Status not ok');
-        const data = await res.json();
-        if (isMounted && data?.ok && data?.state) {
-          const remote: AppState = normalizeAppState(data.state);
-          setCloudConnected(true);
-          setAppState((prev) => {
-            // If local browser state is newer than server state (e.g. after a server restart),
-            // push our saved local state back to the server so added photographers are never lost!
-            if (prev.lastUpdated > remote.lastUpdated) {
-              fetch('/api/state', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ state: prev }),
-              }).catch(() => {});
-              return prev;
-            }
-
-            if (remote.lastUpdated > prev.lastUpdated) {
-              if (
-                remote.shoots.length > lastShootCountRef.current &&
-                activeSession.role !== 'photographer'
-              ) {
-                const newest = remote.shoots[0];
-                if (newest) {
-                  showToast(
-                    `🔔 وصل تصوير جديد من (${newest.photographerName}) لمشروع (${newest.project})! اضغط للانتقال إليه.`,
-                    true,
-                    newest.id
-                  );
-                }
-              }
-
-              if (
-                activeSession.role === 'photographer' &&
-                activeSession.photographer
-              ) {
-                const currentPhotog = activeSession.photographer;
-                const unreadForMe = (remote.photographerNotifications || []).filter(
-                  (n) =>
-                    !n.read &&
-                    (n.photographerId === currentPhotog.id ||
-                      n.photographerName === currentPhotog.name)
-                );
-                const newestNotif = unreadForMe.find(
-                  (n) => !seenPhotographerNotifIdsRef.current.has(n.id)
-                );
-                if (newestNotif) {
-                  seenPhotographerNotifIdsRef.current.add(newestNotif.id);
-                  showToast(newestNotif.message, true);
-                }
-              }
-
-              lastShootCountRef.current = remote.shoots.length;
-              localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(remote));
-              return remote;
-            }
-            return prev;
-          });
-        }
-      } catch {
-        if (isMounted) setCloudConnected(false);
-      }
-    };
-
-    fetchCloudState();
-    const interval = window.setInterval(fetchCloudState, 6000);
-    return () => {
-      isMounted = false;
-      window.clearInterval(interval);
-    };
-  }, [showToast, activeSession.role, activeSession.photographer]);
-
   // Keep document title synced with configured appName
   useEffect(() => {
     document.title = `${appState.config.appName} | Clacket Frame`;
   }, [appState.config.appName]);
 
-  // Keep active photographer session synced with latest photographers list
+  // Keep active photographer session synced with latest photographers list from Firestore
   useEffect(() => {
     if (activeSession.role === 'photographer' && activeSession.photographer) {
       const currentPhotog = activeSession.photographer;
@@ -393,6 +538,11 @@ export default function App() {
     setPinTargetId(null);
     playBeep();
 
+    // Request notification permission automatically on login so background alerts work outside the app
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+
     if (targetId === 'director') {
       try {
         const persisted: PersistedUserSession = { role: 'director' };
@@ -405,7 +555,10 @@ export default function App() {
         const targetShootId = pendingFocusAfterLogin;
         setPendingFocusAfterLogin(null);
         setFocusShootRequest({ shootId: targetShootId, nonce: Date.now() });
-      } else if (appState.activeReminder && appState.shoots.some((s) => s.status !== 'completed')) {
+      } else if (
+        appState.activeReminder &&
+        appState.shoots.some((s) => s.status !== 'completed')
+      ) {
         setShowReminderModal(true);
       }
       return;
@@ -480,7 +633,7 @@ export default function App() {
         const updated = updatePhotographerSelfCredentials(prev, currentPhotog.id, input);
         return updated.ok ? updated.nextState : prev;
       },
-      '✅ تم تغيير وحفظ رمز الدخول السري الخاص بك بنجاح!'
+      '✅ تم تغيير وحفظ رمز الدخول السري الخاص بك في السحابة بنجاح!'
     );
 
     return { ok: true };
@@ -499,6 +652,7 @@ export default function App() {
 
   const handleEnableSystemNotifications = async () => {
     playBeep();
+    await registerClacketServiceWorker();
     const targetShoot = findTargetNotificationShoot(
       appState.shoots,
       appState.activeReminderShootId
@@ -510,7 +664,7 @@ export default function App() {
         if (perm === 'granted') {
           setNotificationsEnabled(true);
           showToast(
-            `🔔 تم تفعيل إشعارات الموبايل! ستصلك تنبيهات المصورين على شاشة القفل، والتذكير المجدول (${scheduleLabel}).`,
+            `🔔 تم تفعيل إشعارات الخلفية والموبايل! ستصلك إشعارات أوردرات المونتاج من المصورين حتى لو كنت خارج التطبيق، والتذكير المجدول (${scheduleLabel}).`,
             true,
             targetShoot?.id ?? null
           );
@@ -547,9 +701,10 @@ export default function App() {
     }
 
     sendNativeMobileNotification(
-      `📸 تصوير جديد من ${currentPhotog.name}`,
+      `📸 أوردر مونتاج جديد من ${currentPhotog.name}`,
       `المشروع: ${result.shoot.project} — ${result.shoot.field1Value}`,
-      `shoot-${result.shoot.id}`
+      `shoot-${result.shoot.id}`,
+      result.shoot.id
     );
 
     updateAppState(
@@ -558,10 +713,10 @@ export default function App() {
         shoots: [result.shoot, ...prev.shoots],
         activeReminder:
           input.reminderNote ||
-          `وصل تصوير جديد من (${currentPhotog.name}) لمشروع (${result.shoot.project}): ${result.shoot.field1Value}`,
+          `وصل أوردر مونتاج جديد من (${currentPhotog.name}) لمشروع (${result.shoot.project}): ${result.shoot.field1Value}`,
         activeReminderShootId: result.shoot.id,
       }),
-      '✅ تم الإرسال إلى المونتير'
+      '✅ تم إرسال أوردر المونتاج وحفظه في السحابة الفورية للمونتير'
     );
 
     return { ok: true };
@@ -617,7 +772,7 @@ export default function App() {
         />
       )}
 
-      {/* نافذة الرمز السري وبصمة الوجه */}
+      {/* نافذة الرمز السري */}
       <PinModal
         isOpen={pinTargetId !== null}
         targetId={pinTargetId}
@@ -654,7 +809,9 @@ export default function App() {
           appName={appState.config.appName}
           activeUserLabel={activeUserLabel}
           cloudConnected={cloudConnected}
+          isRefreshing={isRefreshing}
           notificationsEnabled={notificationsEnabled}
+          onManualRefresh={handleManualRefresh}
           onEnableNotifications={handleEnableSystemNotifications}
           onLockAndReturnHome={handleLockAndReturnHome}
         />
@@ -718,6 +875,8 @@ export default function App() {
             <DirectorView
               state={appState}
               focusShootRequest={focusShootRequest}
+              isRefreshing={isRefreshing}
+              onManualRefresh={handleManualRefresh}
               onUpdateState={updateAppState}
               onShowToast={showToast}
             />

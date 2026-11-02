@@ -31,6 +31,8 @@ export type DirectorTab = 'editTab' | 'ideasTab' | 'statsTab' | 'audioTab' | 'ad
 interface DirectorViewProps {
   state: AppState;
   focusShootRequest?: { shootId: string; nonce: number } | null;
+  isRefreshing?: boolean;
+  onManualRefresh?: () => void;
   onUpdateState: (updater: (prev: AppState) => AppState, toastMsg?: string) => void;
   onShowToast: (msg: string, alsoSystemNotify?: boolean, targetShootId?: string | null) => void;
 }
@@ -38,6 +40,8 @@ interface DirectorViewProps {
 export const DirectorView: React.FC<DirectorViewProps> = ({
   state,
   focusShootRequest,
+  isRefreshing = false,
+  onManualRefresh,
   onUpdateState,
   onShowToast,
 }) => {
@@ -1098,7 +1102,23 @@ export const DirectorView: React.FC<DirectorViewProps> = ({
                 <h2 className="font-bold text-base text-white">
                   🎞️ طابور أعمال التصوير الجاهزة للمونتاج
                 </h2>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  {onManualRefresh && (
+                    <button
+                      id="directorQueueRefreshBtn"
+                      type="button"
+                      onClick={onManualRefresh}
+                      disabled={isRefreshing}
+                      className="text-xs bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-3 py-1.5 rounded-xl font-bold transition cursor-pointer whitespace-nowrap flex items-center gap-1.5"
+                    >
+                      <span className={isRefreshing ? 'inline-block animate-spin' : 'inline-block'}>
+                        🔄
+                      </span>
+                      <span>
+                        {isRefreshing ? 'جاري التحديث...' : 'تحديث إشعارات المصورين'}
+                      </span>
+                    </button>
+                  )}
                   <button
                     id="toggleReminderScheduleBtn"
                     type="button"
@@ -2288,29 +2308,30 @@ export const DirectorView: React.FC<DirectorViewProps> = ({
       {/* TAB 5: إدارة الأسماء والأقسام */}
       {activeTab === 'adminTab' && (
         <div id="adminTab" className="space-y-5">
-          {/* Cloud URL Card */}
+          {/* Cloud Firestore Status Card */}
           <div className="glass rounded-2xl p-5 border-2 border-emerald-500/40 space-y-3">
-            <h3 className="font-bold text-emerald-400 text-base">
-              🌐 ربط الإشعارات الحية عبر الإنترنت
-            </h3>
-            <div className="flex gap-2">
-              <input
-                id="firebaseUrlInput"
-                type="url"
-                dir="ltr"
-                value={adminDraft.firebaseUrl}
-                onChange={(e) =>
-                  updateDraft((prev) => ({ ...prev, firebaseUrl: e.target.value }))
-                }
-                className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-emerald-400 font-bold"
-              />
-              <button
-                type="button"
-                onClick={saveAllAdminChanges}
-                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs transition cursor-pointer whitespace-nowrap"
-              >
-                تحديث وحفظ الرابط
-              </button>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="font-bold text-emerald-400 text-base">
+                  🔥 الربط السحابي الثابت والمباشر مع Firebase Cloud Firestore
+                </h3>
+                <p className="text-xs text-slate-300 mt-1">
+                  جميع عمليات القراءة والكتابة (المصورين، المشاريع، أوردرات المونتاج، والأفكار) محفوظة ومزامنة لحظياً في قاعدة بيانات <span className="text-emerald-300 font-bold">Firebase Cloud Firestore</span> بدون أي اعتماد على الذاكرة المؤقتة للجهاز.
+                </p>
+              </div>
+              {onManualRefresh && (
+                <button
+                  type="button"
+                  onClick={onManualRefresh}
+                  disabled={isRefreshing}
+                  className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs transition cursor-pointer whitespace-nowrap flex items-center gap-1.5"
+                >
+                  <span className={isRefreshing ? 'inline-block animate-spin' : 'inline-block'}>
+                    🔄
+                  </span>
+                  <span>مزامنة وتحديث من Firestore الآن</span>
+                </button>
+              )}
             </div>
           </div>
 
