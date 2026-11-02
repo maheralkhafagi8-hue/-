@@ -27,8 +27,8 @@ async function checkBackendForNewShoots() {
             `🎬 أوردر مونتاج جديد من ${s.photographerName}`,
             {
               body: `المشروع: ${s.project} — ${s.field1Value}`,
-              icon: '/pwa-192x192.png',
-              badge: '/pwa-192x192.png',
+              icon: '/pwa-192x192.png?v=2',
+              badge: '/pwa-192x192.png?v=2',
               dir: 'rtl',
               lang: 'ar',
               tag: `shoot-${s.id}`,
@@ -55,6 +55,13 @@ function ensureBackgroundPolling() {
   pollTimer = setInterval(checkBackendForNewShoots, 8000);
 }
 
+function stopBackgroundPolling() {
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
+
 self.addEventListener('message', function (event) {
   const payload = event.data;
   if (!payload || typeof payload !== 'object') return;
@@ -68,6 +75,8 @@ self.addEventListener('message', function (event) {
     }
     if (directorWatchActive) {
       ensureBackgroundPolling();
+    } else {
+      stopBackgroundPolling();
     }
   }
 

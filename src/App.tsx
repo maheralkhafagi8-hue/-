@@ -222,7 +222,7 @@ export default function App() {
           knownShootIdsRef.current.add(s.id);
         }
 
-        if (newlyArrivedShoots.length > 0 && session.role !== 'photographer') {
+        if (newlyArrivedShoots.length > 0 && session.role === 'director') {
           const newest = newlyArrivedShoots[0];
           showToast(
             `🔔 وصل أوردر مونتاج جديد الآن من (${newest.photographerName}) لمشروع (${newest.project}): ${newest.field1Value} — اضغط للانتقال إليه!`,
@@ -700,24 +700,15 @@ export default function App() {
       return { ok: false, error: result.error };
     }
 
-    sendNativeMobileNotification(
-      `📸 أوردر مونتاج جديد من ${currentPhotog.name}`,
-      `المشروع: ${result.shoot.project} — ${result.shoot.field1Value}`,
-      `shoot-${result.shoot.id}`,
-      result.shoot.id
-    );
-
-    updateAppState(
-      (prev) => ({
-        ...prev,
-        shoots: [result.shoot, ...prev.shoots],
-        activeReminder:
-          input.reminderNote ||
-          `وصل أوردر مونتاج جديد من (${currentPhotog.name}) لمشروع (${result.shoot.project}): ${result.shoot.field1Value}`,
-        activeReminderShootId: result.shoot.id,
-      }),
-      '✅ تم إرسال أوردر المونتاج وحفظه في السحابة الفورية للمونتير'
-    );
+    // Save directly to Firestore so the Director receives the notification (do NOT trigger notification on the photographer's own device)
+    updateAppState((prev) => ({
+      ...prev,
+      shoots: [result.shoot, ...prev.shoots],
+      activeReminder:
+        input.reminderNote ||
+        `وصل أوردر مونتاج جديد من (${currentPhotog.name}) لمشروع (${result.shoot.project}): ${result.shoot.field1Value}`,
+      activeReminderShootId: result.shoot.id,
+    }));
 
     return { ok: true };
   };

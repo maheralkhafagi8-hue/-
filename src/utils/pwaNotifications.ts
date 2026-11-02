@@ -63,8 +63,8 @@ export async function sendNativeMobileNotification(
 
   const options: NotificationOptions & { vibrate?: number[]; renotify?: boolean } = {
     body,
-    icon: '/pwa-192x192.png',
-    badge: '/pwa-192x192.png',
+    icon: '/pwa-192x192.png?v=2',
+    badge: '/pwa-192x192.png?v=2',
     dir: 'rtl',
     lang: 'ar',
     tag,

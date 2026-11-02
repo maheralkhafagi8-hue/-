@@ -42,9 +42,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
     >
       <div className="w-full max-w-md glass rounded-3xl p-7 text-center shadow-2xl border border-amber-500/20 my-auto space-y-5">
         <div>
-          <div className="w-20 h-20 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-4xl shadow-lg">
-            🎬
-          </div>
+          <img
+            src="/icon.svg?v=2"
+            alt="شعار كلاكيت فريم"
+            referrerPolicy="no-referrer"
+            className="w-24 h-24 mx-auto mb-3 rounded-3xl shadow-2xl border border-amber-500/30"
+          />
 
           <h1 id="welcomeAppName" className="text-3xl font-black text-white">
             {config.appName}
@@ -112,7 +115,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                   if (loginError) setLoginError(null);
                 }}
                 placeholder="أدخل الرمز السري..."
-                className="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-xl px-4 py-3 pl-12 text-base font-mono tabular-nums text-amber-400 font-bold focus:outline-none transition"
+                className="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-xl px-4 py-3 pl-12 text-base tabular-nums text-amber-400 font-bold focus:outline-none transition"
               />
               <button
                 type="button"
