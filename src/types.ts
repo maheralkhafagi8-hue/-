@@ -149,7 +149,7 @@ export const INITIAL_APP_STATE: AppState = {
     welcomeQuote: '✨ أهلاً بأبطال الميدان.. كل لقطة حلوة منكم تصنع فرق!',
     field1Label: 'تفاصيل اللقطات الميدانية / موضوع التصوير',
     field2Label: 'ملاحظات للمونتير / رقم الذاكرة أو رابط التلكرام',
-    telegramUrl: 'https://t.me/clacket_frame_team',
+    telegramUrl: 'https://t.me/+3OK041GSiY5kYzcy',
     firebaseUrl: 'https://clacket-frame-default-rtdb.firebaseio.com',
     enableAudioSection: true,
   },

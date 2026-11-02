@@ -21,14 +21,12 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="sticky top-0 z-30 glass border-b border-slate-800 px-4 py-3">
       <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onLockAndReturnHome}
-            aria-label="العودة إلى شاشة الدخول"
-            className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-xl hover:bg-amber-500/30 transition cursor-pointer shrink-0"
+          <div
+            aria-hidden="true"
+            className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-xl shrink-0"
           >
             🎬
-          </button>
+          </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h1 id="headerAppName" className="font-black text-lg text-white whitespace-nowrap">

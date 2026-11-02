@@ -8,6 +8,8 @@ import {
   getPendingShootsCount,
   isScheduledReminderDue,
   normalizeAppState,
+  PersistedUserSession,
+  resolvePersistedSession,
   updatePhotographerSelfCredentials,
   verifyAccountPin,
 } from './utils/clacketLogic';
@@ -21,6 +23,7 @@ import { DirectorView } from './components/DirectorView';
 import { PhotographerView } from './components/PhotographerView';
 
 const LOCAL_STORAGE_KEY = 'clacket_frame_state_v1';
+const SESSION_STORAGE_KEY = 'clacket_active_session_v1';
 
 export default function App() {
   const [appState, setAppState] = useState<AppState>(() => {
@@ -40,7 +43,7 @@ export default function App() {
     return normalizeAppState(INITIAL_APP_STATE);
   });
 
-  // Determine initial session from query params (?autostart=1 or ?role=director)
+  // Determine initial session from query params or persisted session in localStorage
   const [activeSession, setActiveSession] = useState<{
     role: 'welcome' | 'director' | 'photographer';
     photographer?: Photographer;
@@ -51,6 +54,15 @@ export default function App() {
     }
     if (params.get('role') === 'photographer' && appState.photographers[0]) {
       return { role: 'photographer', photographer: appState.photographers[0] };
+    }
+    try {
+      const savedSessionRaw = localStorage.getItem(SESSION_STORAGE_KEY);
+      if (savedSessionRaw) {
+        const parsedSession = JSON.parse(savedSessionRaw) as PersistedUserSession;
+        return resolvePersistedSession(parsedSession, appState);
+      }
+    } catch {
+      // ignore storage errors
     }
     return { role: 'welcome' };
   });
@@ -292,6 +304,37 @@ export default function App() {
     document.title = `${appState.config.appName} | Clacket Frame`;
   }, [appState.config.appName]);
 
+  // Keep active photographer session synced with latest photographers list
+  useEffect(() => {
+    if (activeSession.role === 'photographer' && activeSession.photographer) {
+      const currentPhotog = activeSession.photographer;
+      const latestPhotog = appState.photographers.find(
+        (p) => p.id === currentPhotog.id || p.name.trim() === currentPhotog.name.trim()
+      );
+      if (
+        latestPhotog &&
+        (latestPhotog.name !== currentPhotog.name ||
+          latestPhotog.pin !== currentPhotog.pin ||
+          latestPhotog.id !== currentPhotog.id)
+      ) {
+        setActiveSession({
+          role: 'photographer',
+          photographer: latestPhotog,
+        });
+        try {
+          const persisted: PersistedUserSession = {
+            role: 'photographer',
+            photographerId: latestPhotog.id,
+            photographerName: latestPhotog.name,
+          };
+          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(persisted));
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }, [appState.photographers, activeSession.role, activeSession.photographer]);
+
   const handleUpdateReminderScheduleFromPopup = (input: {
     preset: '30' | '60' | '120' | '180' | '240' | '360' | 'custom';
     customAmount?: string;
@@ -351,6 +394,12 @@ export default function App() {
     playBeep();
 
     if (targetId === 'director') {
+      try {
+        const persisted: PersistedUserSession = { role: 'director' };
+        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(persisted));
+      } catch {
+        // ignore
+      }
       setActiveSession({ role: 'director' });
       if (pendingFocusAfterLogin) {
         const targetShootId = pendingFocusAfterLogin;
@@ -364,6 +413,16 @@ export default function App() {
 
     const photog = appState.photographers.find((p) => p.id === targetId);
     if (photog) {
+      try {
+        const persisted: PersistedUserSession = {
+          role: 'photographer',
+          photographerId: photog.id,
+          photographerName: photog.name,
+        };
+        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(persisted));
+      } catch {
+        // ignore
+      }
       setActiveSession({
         role: 'photographer',
         photographer: photog,
@@ -428,6 +487,11 @@ export default function App() {
   };
 
   const handleLockAndReturnHome = () => {
+    try {
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
     setActiveSession({ role: 'welcome' });
     setPinTargetId(null);
     setPinError(null);

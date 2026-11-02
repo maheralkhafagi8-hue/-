@@ -77,6 +77,12 @@ export function normalizeAppState(raw: Partial<AppState> | null | undefined): Ap
   if (mergedConfig.directorFaceIdEnabled === undefined) {
     mergedConfig.directorFaceIdEnabled = false;
   }
+  if (
+    !mergedConfig.telegramUrl ||
+    mergedConfig.telegramUrl.trim() === 'https://t.me/clacket_frame_team'
+  ) {
+    mergedConfig.telegramUrl = 'https://t.me/+3OK041GSiY5kYzcy';
+  }
 
   const cleanedPhotographers = Array.isArray(raw.photographers)
     ? raw.photographers
@@ -872,3 +878,49 @@ export function findTargetNotificationShoot(
 
   return activeShoots[0] || null;
 }
+
+export interface PersistedUserSession {
+  role: 'director' | 'photographer';
+  photographerId?: string;
+  photographerName?: string;
+}
+
+export function resolvePersistedSession(
+  rawSession: PersistedUserSession | null | undefined,
+  state: AppState
+): {
+  role: 'welcome' | 'director' | 'photographer';
+  photographer?: Photographer;
+} {
+  if (!rawSession || typeof rawSession !== 'object') {
+    return { role: 'welcome' };
+  }
+  if (rawSession.role === 'director') {
+    return { role: 'director' };
+  }
+  if (rawSession.role === 'photographer') {
+    const matchedPhotog = state.photographers.find(
+      (p) =>
+        (rawSession.photographerId && p.id === rawSession.photographerId) ||
+        (rawSession.photographerName &&
+          p.name.trim() === rawSession.photographerName.trim())
+    );
+    if (matchedPhotog) {
+      return { role: 'photographer', photographer: matchedPhotog };
+    }
+    if (rawSession.photographerId && rawSession.photographerName) {
+      return {
+        role: 'photographer',
+        photographer: {
+          id: rawSession.photographerId,
+          name: rawSession.photographerName,
+          pin: '0000',
+          specialty: 'مصور ميداني',
+          faceIdEnabled: false,
+        },
+      };
+    }
+  }
+  return { role: 'welcome' };
+}
+

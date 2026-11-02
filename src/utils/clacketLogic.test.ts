@@ -20,6 +20,7 @@ import {
   generateSmartIdeaSuggestions,
   updatePhotographerSelfCredentials,
   authenticateUserByCredentials,
+  resolvePersistedSession,
 } from './clacketLogic';
 
 const TEST_FIXTURE_STATE: AppState = {
@@ -355,3 +356,25 @@ test('authenticateUserByCredentials authenticates Maher Al-Khafaji (199400) and 
   assert.equal(photogRes.role, 'photographer');
   assert.equal(photogRes.photographer?.id, 'p-1');
 });
+
+test('resolvePersistedSession restores director and photographer sessions and normalizeAppState upgrades old Telegram link', () => {
+  const dirSession = resolvePersistedSession({ role: 'director' }, TEST_FIXTURE_STATE);
+  assert.equal(dirSession.role, 'director');
+
+  const photogSession = resolvePersistedSession(
+    { role: 'photographer', photographerId: 'p-2', photographerName: 'كرار المصور' },
+    TEST_FIXTURE_STATE
+  );
+  assert.equal(photogSession.role, 'photographer');
+  assert.equal(photogSession.photographer?.name, 'كرار المصور');
+
+  const migrated = normalizeAppState({
+    ...INITIAL_APP_STATE,
+    config: {
+      ...INITIAL_APP_STATE.config,
+      telegramUrl: 'https://t.me/clacket_frame_team',
+    },
+  });
+  assert.equal(migrated.config.telegramUrl, 'https://t.me/+3OK041GSiY5kYzcy');
+});
+
