@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { AppState, IdeaItem, Photographer } from '../types';
 import { createShootRecord } from '../utils/clacketLogic';
-import { registerFaceIdOnDevice } from '../utils/biometricAuth';
 
 interface PhotographerViewProps {
   photographer: Photographer;
@@ -132,26 +131,6 @@ export const PhotographerView: React.FC<PhotographerViewProps> = ({
     });
   };
 
-  const handleSetupFaceId = async () => {
-    await registerFaceIdOnDevice(photographer.id, photographer.name);
-    onUpdatePhotographerCredentials({ faceIdEnabled: true });
-    setPinChangeMsg({
-      type: 'ok',
-      text: '👤 تم تفعيل وربط بصمة الوجه (Face ID) لحسابك بنجاح!',
-    });
-  };
-
-  const handleToggleFaceIdEnabled = () => {
-    const nextEnabled = photographer.faceIdEnabled === false;
-    onUpdatePhotographerCredentials({ faceIdEnabled: nextEnabled });
-    setPinChangeMsg({
-      type: 'ok',
-      text: nextEnabled
-        ? '👤 تم تفعيل الدخول ببصمة الوجه (Face ID)'
-        : '🔒 تم إيقاف بصمة الوجه والاكتفاء بالرمز السري',
-    });
-  };
-
   const applyIdeaToForm = (idea: IdeaItem) => {
     setSelectedProject(idea.project);
     setField1Value(`تنفيذ فكرة: ${idea.title} (${idea.notes.slice(0, 60)})`);
@@ -187,7 +166,7 @@ export const PhotographerView: React.FC<PhotographerViewProps> = ({
             className="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-3.5 py-2.5 rounded-xl font-black transition cursor-pointer flex items-center gap-1.5"
           >
             <span>🔑</span>
-            <span>تغيير رمز الدخول / بصمة الوجه (Face ID)</span>
+            <span>تغيير رمز الدخول السري</span>
           </button>
 
           <div className="flex items-center gap-4 bg-slate-900/90 px-4 py-2 rounded-xl border border-slate-800">
@@ -208,7 +187,7 @@ export const PhotographerView: React.FC<PhotographerViewProps> = ({
         </div>
       </div>
 
-      {/* Photographer Self-Service PIN Change & Face ID Card */}
+      {/* Photographer Self-Service PIN Change Card */}
       {showSecurityPanel && (
         <div
           id="photographerSecurityCard"
@@ -217,7 +196,7 @@ export const PhotographerView: React.FC<PhotographerViewProps> = ({
           <div className="flex items-center justify-between">
             <h3 className="text-sm sm:text-base font-black text-amber-400 flex items-center gap-2">
               <span>🔐</span>
-              <span>إعدادات الدخول الخاصة بك ({photographer.name})</span>
+              <span>تغيير رمز الدخول السري ({photographer.name})</span>
             </h3>
             <button
               type="button"
@@ -228,105 +207,62 @@ export const PhotographerView: React.FC<PhotographerViewProps> = ({
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Change PIN Form */}
-            <form
-              onSubmit={handleSaveNewPin}
-              className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 space-y-3"
-            >
-              <div className="text-xs font-black text-white flex items-center gap-1.5">
-                <span>🔑</span>
-                <span>تغيير رمز الدخول السري الخاص بك:</span>
-              </div>
+          <form
+            onSubmit={handleSaveNewPin}
+            className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 space-y-3"
+          >
+            <div className="text-xs font-black text-white flex items-center gap-1.5">
+              <span>🔑</span>
+              <span>أدخل رمز الدخول السري الجديد الخاص بك:</span>
+            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-                <div>
-                  <label
-                    htmlFor="photogNewPinInput"
-                    className="block text-slate-400 mb-1 font-bold"
-                  >
-                    الرمز السري الجديد:
-                  </label>
-                  <input
-                    id="photogNewPinInput"
-                    type="password"
-                    inputMode="numeric"
-                    maxLength={8}
-                    value={newPin}
-                    onChange={(e) => setNewPin(e.target.value)}
-                    placeholder="أدخل الرمز الجديد..."
-                    className="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-xl px-3 py-2.5 text-white text-center font-mono tabular-nums"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="photogConfirmPinInput"
-                    className="block text-slate-400 mb-1 font-bold"
-                  >
-                    تأكيد الرمز الجديد:
-                  </label>
-                  <input
-                    id="photogConfirmPinInput"
-                    type="password"
-                    inputMode="numeric"
-                    maxLength={8}
-                    value={confirmPin}
-                    onChange={(e) => setConfirmPin(e.target.value)}
-                    placeholder="أعد كتابة الرمز..."
-                    className="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-xl px-3 py-2.5 text-white text-center font-mono tabular-nums"
-                  />
-                </div>
-              </div>
-
-              <button
-                id="btnSavePhotogPin"
-                type="submit"
-                className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition cursor-pointer"
-              >
-                💾 حفظ رمز الدخول الجديد
-              </button>
-            </form>
-
-            {/* Face ID Biometric Enrollment */}
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between space-y-3">
-              <div className="space-y-1">
-                <div className="text-xs font-black text-emerald-400 flex items-center gap-1.5">
-                  <span>👤</span>
-                  <span>الدخول السريع ببصمة الوجه (Face ID):</span>
-                </div>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  يمكنك فتح حسابك مباشرة عبر بصمة الوجه (Face ID) من شاشة الترحيب دون الحاجة لكتابة الرمز في كل مرة.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <button
-                  id="btnSetupPhotogFaceId"
-                  type="button"
-                  onClick={handleSetupFaceId}
-                  className="w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition cursor-pointer flex items-center justify-center gap-2"
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+              <div>
+                <label
+                  htmlFor="photogNewPinInput"
+                  className="block text-slate-400 mb-1 font-bold"
                 >
-                  <span>👤</span>
-                  <span>تفعيل / ربط بصمة الوجه (Face ID) على جهازي</span>
-                </button>
-
-                <button
-                  id="btnTogglePhotogFaceIdStatus"
-                  type="button"
-                  onClick={handleToggleFaceIdEnabled}
-                  className={`w-full py-2 px-3 rounded-xl font-bold text-xs transition cursor-pointer ${
-                    photographer.faceIdEnabled !== false
-                      ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
-                      : 'bg-slate-800 text-slate-400'
-                  }`}
+                  الرمز السري الجديد:
+                </label>
+                <input
+                  id="photogNewPinInput"
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={8}
+                  value={newPin}
+                  onChange={(e) => setNewPin(e.target.value)}
+                  placeholder="أدخل الرمز الجديد..."
+                  className="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-xl px-3 py-2.5 text-white text-center font-mono tabular-nums"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="photogConfirmPinInput"
+                  className="block text-slate-400 mb-1 font-bold"
                 >
-                  {photographer.faceIdEnabled !== false
-                    ? '✅ بصمة الوجه مفعّلة لحسابك (اضغط للإيقاف)'
-                    : '🔇 بصمة الوجه متوقفة (اضغط للتفعيل)'}
-                </button>
+                  تأكيد الرمز الجديد:
+                </label>
+                <input
+                  id="photogConfirmPinInput"
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={8}
+                  value={confirmPin}
+                  onChange={(e) => setConfirmPin(e.target.value)}
+                  placeholder="أعد كتابة الرمز..."
+                  className="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-xl px-3 py-2.5 text-white text-center font-mono tabular-nums"
+                />
               </div>
             </div>
-          </div>
+
+            <button
+              id="btnSavePhotogPin"
+              type="submit"
+              className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition cursor-pointer"
+            >
+              💾 حفظ رمز الدخول الجديد
+            </button>
+          </form>
 
           {pinChangeMsg && (
             <p
