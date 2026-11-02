@@ -1,0 +1,134 @@
+{
+  "config": {
+    "appName": "كلاكيت فريم",
+    "directorName": "ماهر الخفاجي",
+    "directorPin": "199400",
+    "directorFaceIdEnabled": false,
+    "welcomeQuote": "✨ أهلاً بأبطال الميدان.. كل لقطة حلوة منكم تصنع فرق!",
+    "field1Label": "تفاصيل اللقطات الميدانية / موضوع التصوير",
+    "field2Label": "ملاحظات للمونتير",
+    "telegramUrl": "https://t.me/clacket_frame_team",
+    "firebaseUrl": "https://clacket-frame-default-rtdb.firebaseio.com",
+    "enableAudioSection": false
+  },
+  "projects": [
+    "مجمع ريحانة السكني",
+    "مجمع زمزم السكني",
+    "ريحانة بارك"
+  ],
+  "photographers": [
+    {
+      "id": "photog-1793618404583",
+      "name": "حسسين الموسوي",
+      "pin": "0000",
+      "specialty": "مصور ميداني",
+      "faceIdEnabled": true
+    },
+    {
+      "id": "photog-1793618529435",
+      "name": "علي الياسري",
+      "pin": "0000",
+      "specialty": "مصور ميداني",
+      "faceIdEnabled": true
+    }
+  ],
+  "shoots": [],
+  "ideas": [
+    {
+      "id": "idea-201",
+      "project": "مجمع ريحانة السكني",
+      "title": "ترند الانتقال السريع (Match Cut) من المخطط الهندسي إلى الواقع",
+      "link": "https://www.instagram.com/reels/",
+      "notes": "تبدأ اللقطة بيد المهندس يمسك الآيباد على المخطط ثم حركة كاميرا سريعة تكشف البناية الحقيقية المكتملة بنفس الزاوية.",
+      "createdAt": "2026-10-30",
+      "isCompleted": false,
+      "approvedForPhotographers": false,
+      "isSuggestedByApp": true
+    },
+    {
+      "id": "idea-202",
+      "project": "ريحانة بارك",
+      "title": "تجربة المشي الصباحي (POV) وسط الحدائق والنافورات",
+      "link": "https://www.tiktok.com/",
+      "notes": "تصوير بزاوية واسعة 16mm مع أصوات طبيعية (ASMR) للمياه والأشجار بدون موسيقى صاخبة في أول 5 ثواني.",
+      "createdAt": "2026-10-31",
+      "isCompleted": false,
+      "approvedForPhotographers": false,
+      "isSuggestedByApp": true
+    },
+    {
+      "id": "idea-203",
+      "project": "مجمع زمزم السكني",
+      "title": "لقطة درون عمودية (Top-Down 90°) تكشف تناسق الأبراج السكنية وقت الغروب",
+      "link": "",
+      "notes": "ارتفاع تدريجي من 15 متر إلى 80 متر مع تشغيل الإضاءة الليلية للمجمع لعمل Speed Ramp سينمائي.",
+      "createdAt": "2026-11-01",
+      "isCompleted": false,
+      "approvedForPhotographers": false,
+      "isSuggestedByApp": true
+    },
+    {
+      "id": "idea-204",
+      "project": "مجمع ريحانة السكني",
+      "title": "جولة One-Take مستمرة من بوابة المجمع إلى داخل صالة الفيلا النموذجية",
+      "link": "",
+      "notes": "استخدام مثبت Gimbal بحركة سلسة للأمام مع فتح الباب في الثانية الثالثة كـ Hook بصري خاطف.",
+      "createdAt": "2026-11-01",
+      "isCompleted": false,
+      "approvedForPhotographers": false,
+      "isSuggestedByApp": true
+    }
+  ],
+  "audioTasks": [],
+  "photographerNotifications": [],
+  "activeReminder": null,
+  "activeReminderShootId": null,
+  "reminderSchedule": {
+    "preset": "30",
+    "intervalMinutes": 30,
+    "label": "بعد نصف ساعة",
+    "targetShootId": "shoot-101",
+    "nextTriggerAt": 1793619039751
+  },
+  "counterConfig": {
+    "tabTitle": "المنجزات",
+    "directorCardTitle": "وحدة منجزاتي الخاصة (المونتير)",
+    "directorCustomItems": [
+      {
+        "id": "dir-ach-1",
+        "label": "ريلز إعلاني تم مونتاجه ونشره",
+        "count": 0
+      },
+      {
+        "id": "dir-ach-2",
+        "label": "فيديوهات تغطية شاملة ومؤثرات",
+        "count": 0
+      }
+    ],
+    "photographerCustomFields": [
+      {
+        "id": "cfield-1",
+        "name": "لقطات ريلز إبداعية"
+      },
+      {
+        "id": "cfield-2",
+        "name": "تغطية درون جوية"
+      }
+    ],
+    "photographerCustomCounts": {
+      "photog-1": {
+        "cfield-1": 3,
+        "cfield-2": 1
+      },
+      "photog-2": {
+        "cfield-1": 1,
+        "cfield-2": 4
+      },
+      "photog-3": {
+        "cfield-1": 2,
+        "cfield-2": 1
+      }
+    }
+  },
+  "lastUpdated": 1793619105707
+}

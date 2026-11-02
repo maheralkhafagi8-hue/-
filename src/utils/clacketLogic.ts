@@ -60,11 +60,22 @@ export function normalizeAppState(raw: Partial<AppState> | null | undefined): Ap
     ...INITIAL_APP_STATE.config,
     ...(raw.config || {}),
   };
-  if (!mergedConfig.directorName || mergedConfig.directorName.trim() === 'المونتير') {
-    mergedConfig.directorName = 'المونتير ماهر';
+  if (
+    !mergedConfig.directorName ||
+    mergedConfig.directorName.trim() === 'المونتير' ||
+    mergedConfig.directorName.trim() === 'المونتير ماهر'
+  ) {
+    mergedConfig.directorName = 'ماهر الخفاجي';
+  }
+  if (
+    !mergedConfig.directorPin ||
+    mergedConfig.directorPin.trim() === '1234' ||
+    mergedConfig.directorPin.trim() === '2026'
+  ) {
+    mergedConfig.directorPin = '199400';
   }
   if (mergedConfig.directorFaceIdEnabled === undefined) {
-    mergedConfig.directorFaceIdEnabled = true;
+    mergedConfig.directorFaceIdEnabled = false;
   }
 
   const cleanedPhotographers = Array.isArray(raw.photographers)
@@ -72,7 +83,7 @@ export function normalizeAppState(raw: Partial<AppState> | null | undefined): Ap
         .filter((p) => p && !LEGACY_DEMO_PHOTOGRAPHER_NAMES.has(p.name?.trim()))
         .map((p) => ({
           ...p,
-          faceIdEnabled: p.faceIdEnabled ?? true,
+          faceIdEnabled: p.faceIdEnabled ?? false,
         }))
     : INITIAL_APP_STATE.photographers;
 
@@ -149,7 +160,7 @@ export function updatePhotographerSelfCredentials(
     ...photog,
     pin: nextPin,
     faceIdEnabled:
-      input.faceIdEnabled !== undefined ? input.faceIdEnabled : (photog.faceIdEnabled ?? true),
+      input.faceIdEnabled !== undefined ? input.faceIdEnabled : (photog.faceIdEnabled ?? false),
   };
 
   const nextState: AppState = {
@@ -185,6 +196,53 @@ export function verifyAccountPin(
   }
 
   return { valid: false, role: null };
+}
+
+export function authenticateUserByCredentials(
+  state: AppState,
+  enteredUsername: string,
+  enteredPassword: string
+): {
+  valid: boolean;
+  role: 'director' | 'photographer' | null;
+  photographer?: Photographer;
+  error?: string;
+} {
+  const normalizeName = (str: string) => str.trim().replace(/\s+/g, ' ');
+  const cleanUser = normalizeName(enteredUsername);
+  const cleanPass = enteredPassword.trim();
+
+  if (!cleanUser) {
+    return { valid: false, role: null, error: 'يرجى كتابة اسم المستخدم (الاسم)' };
+  }
+  if (!cleanPass) {
+    return { valid: false, role: null, error: 'يرجى كتابة الرمز السري (الباسورد)' };
+  }
+
+  const configuredAdminName = normalizeName(state.config.directorName || 'ماهر الخفاجي');
+  const configuredAdminPin = (state.config.directorPin || '199400').trim();
+
+  const isDirectorMatch =
+    (cleanUser === configuredAdminName || cleanUser === 'ماهر الخفاجي') &&
+    cleanPass === configuredAdminPin;
+
+  if (isDirectorMatch) {
+    return { valid: true, role: 'director' };
+  }
+
+  const matchedPhotog = state.photographers.find(
+    (p) => normalizeName(p.name) === cleanUser && p.pin.trim() === cleanPass
+  );
+
+  if (matchedPhotog) {
+    return { valid: true, role: 'photographer', photographer: matchedPhotog };
+  }
+
+  return {
+    valid: false,
+    role: null,
+    error: 'اسم المستخدم أو الرمز السري غير صحيح، تأكد من كتابة الاسم والرمز بشكل مطابق',
+  };
 }
 
 export function getPendingShootsCount(shoots: ShootItem[]): {

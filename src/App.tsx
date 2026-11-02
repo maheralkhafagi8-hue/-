@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, INITIAL_APP_STATE, Photographer } from './types';
 import {
+  authenticateUserByCredentials,
   buildReminderSchedule,
   createShootRecord,
   findTargetNotificationShoot,
@@ -325,6 +326,25 @@ export default function App() {
     setPinTargetId(targetId);
   };
 
+  const handleLoginWithCredentials = (
+    username: string,
+    password: string
+  ): { ok: boolean; error?: string } => {
+    const authResult = authenticateUserByCredentials(appState, username, password);
+    if (!authResult.valid) {
+      return { ok: false, error: authResult.error };
+    }
+    if (authResult.role === 'director') {
+      completeLoginForTarget('director');
+      return { ok: true };
+    }
+    if (authResult.role === 'photographer' && authResult.photographer) {
+      completeLoginForTarget(authResult.photographer.id);
+      return { ok: true };
+    }
+    return { ok: false, error: 'تعذر تسجيل الدخول، يرجى التحقق من البيانات' };
+  };
+
   const completeLoginForTarget = (targetId: 'director' | string) => {
     setPinError(null);
     setPinTargetId(null);
@@ -401,9 +421,7 @@ export default function App() {
         const updated = updatePhotographerSelfCredentials(prev, currentPhotog.id, input);
         return updated.ok ? updated.nextState : prev;
       },
-      input.newPin
-        ? '✅ تم تغيير وحفظ رمز الدخول السري الخاص بك بنجاح!'
-        : '👤 تم تحديث إعدادات بصمة الوجه (Face ID) لحسابك!'
+      '✅ تم تغيير وحفظ رمز الدخول السري الخاص بك بنجاح!'
     );
 
     return { ok: true };
@@ -530,6 +548,7 @@ export default function App() {
           scheduleLabel={appState.reminderSchedule?.label}
           notificationsEnabled={notificationsEnabled}
           onEnableNotifications={handleEnableSystemNotifications}
+          onLoginWithCredentials={handleLoginWithCredentials}
           onOpenPinModal={handleOpenPinModal}
         />
       )}

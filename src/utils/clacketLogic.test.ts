@@ -19,6 +19,7 @@ import {
   createStartEditingNotification,
   generateSmartIdeaSuggestions,
   updatePhotographerSelfCredentials,
+  authenticateUserByCredentials,
 } from './clacketLogic';
 
 const TEST_FIXTURE_STATE: AppState = {
@@ -69,7 +70,7 @@ const TEST_FIXTURE_STATE: AppState = {
 };
 
 test('verifyAccountPin validates director and photographer PINs accurately', () => {
-  const dirOk = verifyAccountPin(TEST_FIXTURE_STATE, 'director', '1234');
+  const dirOk = verifyAccountPin(TEST_FIXTURE_STATE, 'director', '199400');
   assert.equal(dirOk.valid, true);
   assert.equal(dirOk.role, 'director');
 
@@ -339,4 +340,18 @@ test('updatePhotographerSelfCredentials updates photographer PIN and Face ID set
     const verifyNew = verifyAccountPin(res.nextState, 'p-1', '7788');
     assert.equal(verifyNew.valid, true);
   }
+});
+
+test('authenticateUserByCredentials authenticates Maher Al-Khafaji (199400) and photographers by username and password', () => {
+  const adminRes = authenticateUserByCredentials(TEST_FIXTURE_STATE, 'ماهر الخفاجي', '199400');
+  assert.equal(adminRes.valid, true);
+  assert.equal(adminRes.role, 'director');
+
+  const wrongAdmin = authenticateUserByCredentials(TEST_FIXTURE_STATE, 'ماهر الخفاجي', '0000');
+  assert.equal(wrongAdmin.valid, false);
+
+  const photogRes = authenticateUserByCredentials(TEST_FIXTURE_STATE, 'بلال المصور', '1111');
+  assert.equal(photogRes.valid, true);
+  assert.equal(photogRes.role, 'photographer');
+  assert.equal(photogRes.photographer?.id, 'p-1');
 });

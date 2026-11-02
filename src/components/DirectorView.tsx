@@ -2336,7 +2336,7 @@ export const DirectorView: React.FC<DirectorViewProps> = ({
               </div>
               <div>
                 <label htmlFor="cfgDirectorName" className="text-slate-400 block mb-1">
-                  اسم خانتك الخاصة + الرمز السري:
+                  حساب الأدمن للدخول (الاسم / اليوزر + الرمز السري):
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -2356,7 +2356,7 @@ export const DirectorView: React.FC<DirectorViewProps> = ({
                     onChange={(e) =>
                       updateDraft((prev) => ({ ...prev, directorPin: e.target.value }))
                     }
-                    className="w-24 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-center text-amber-400 font-bold font-mono tabular-nums"
+                    className="w-28 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-center text-amber-400 font-bold font-mono tabular-nums"
                   />
                 </div>
               </div>
@@ -2422,9 +2422,25 @@ export const DirectorView: React.FC<DirectorViewProps> = ({
 
           {/* Photographers Management */}
           <div className="glass rounded-2xl p-5 space-y-3">
-            <h3 className="font-bold text-amber-400">
-              📸 إدارة الأخوة المصورين والرموز السرية (تعديل الاسم والرمز بحرية مع المسافات)
-            </h3>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="font-bold text-amber-400">
+                  📸 إدارة حسابات الأخوة المصورين (الاسم / اليوزر والرمز السري للدخول)
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  أضف اسم المصور ورمزه السري هنا وأعطهما للمصور ليدخل بهما من شاشة تسجيل الدخول.
+                </p>
+              </div>
+              {hasUnsavedAdminChanges && (
+                <button
+                  type="button"
+                  onClick={handleSaveAdminChanges}
+                  className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-3.5 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap"
+                >
+                  💾 حفظ التعديلات الآن
+                </button>
+              )}
+            </div>
             <div id="adminPhotographersList" className="space-y-2">
               {adminDraft.photographers.map((photog, idx) => (
                 <div
@@ -2432,7 +2448,7 @@ export const DirectorView: React.FC<DirectorViewProps> = ({
                   className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 bg-slate-900/90 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs"
                 >
                   <div className="flex items-center gap-2 flex-1 min-w-[180px]">
-                    <span>📸</span>
+                    <span className="text-slate-400 text-[11px] shrink-0">👤 الاسم:</span>
                     <input
                       type="text"
                       aria-label={`اسم المصور ${idx + 1}`}
@@ -2445,7 +2461,7 @@ export const DirectorView: React.FC<DirectorViewProps> = ({
                     />
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <label className="text-slate-400 text-[11px]">الرمز:</label>
+                    <label className="text-slate-400 text-[11px]">🔑 الرمز:</label>
                     <input
                       type="text"
                       aria-label={`رمز المصور ${idx + 1}`}
@@ -2453,7 +2469,7 @@ export const DirectorView: React.FC<DirectorViewProps> = ({
                       onChange={(e) =>
                         updatePhotographerPinDraft(photog.id, e.target.value)
                       }
-                      className="w-20 bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-lg px-2 py-1.5 text-center text-amber-400 font-mono tabular-nums focus:outline-none"
+                      className="w-24 bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-lg px-2 py-1.5 text-center text-amber-400 font-mono tabular-nums focus:outline-none"
                     />
                     <button
                       type="button"
@@ -2473,7 +2489,7 @@ export const DirectorView: React.FC<DirectorViewProps> = ({
                 type="text"
                 value={newPhotogName}
                 onChange={(e) => setNewPhotogName(e.target.value)}
-                placeholder="اسم المصور الجديد..."
+                placeholder="اسم المصور الجديد (اليوزر)..."
                 className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
               />
               <input
@@ -2481,8 +2497,8 @@ export const DirectorView: React.FC<DirectorViewProps> = ({
                 type="text"
                 value={newPhotogPin}
                 onChange={(e) => setNewPhotogPin(e.target.value)}
-                placeholder="رمزه (0000)"
-                className="w-32 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-center text-white font-mono tabular-nums"
+                placeholder="الرمز السري (مثال: 0000)"
+                className="w-36 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-center text-white font-mono tabular-nums"
               />
               <button
                 type="button"

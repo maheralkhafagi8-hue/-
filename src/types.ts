@@ -143,9 +143,9 @@ export const INITIAL_COUNTER_CONFIG: CounterConfig = {
 export const INITIAL_APP_STATE: AppState = {
   config: {
     appName: 'كلاكيت فريم',
-    directorName: 'المونتير ماهر',
-    directorPin: '1234',
-    directorFaceIdEnabled: true,
+    directorName: 'ماهر الخفاجي',
+    directorPin: '199400',
+    directorFaceIdEnabled: false,
     welcomeQuote: '✨ أهلاً بأبطال الميدان.. كل لقطة حلوة منكم تصنع فرق!',
     field1Label: 'تفاصيل اللقطات الميدانية / موضوع التصوير',
     field2Label: 'ملاحظات للمونتير / رقم الذاكرة أو رابط التلكرام',
