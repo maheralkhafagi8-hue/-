@@ -1,0 +1,6 @@
+{
+  "name": "كلاكيت فريم | Clacket Frame",
+  "description": "منصة إدارة الإنتاج المرئي والمونتاج وتنسيق فرق التصوير الميداني مع مساعد مونتاج ذكي",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

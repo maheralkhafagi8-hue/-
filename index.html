@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ar" dir="rtl" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      (function () {
+        window.addEventListener('unhandledrejection', function (e) {
+          if (e && e.reason && String(e.reason.message || e.reason).indexOf('WebSocket closed without opened') !== -1) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }, true);
+        window.addEventListener('error', function (e) {
+          if (e && String(e.message || '').indexOf('WebSocket closed without opened') !== -1) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }, true);
+        var NativeWS = window.WebSocket;
+        if (NativeWS) {
+          var WrappedWS = function (url, protocols) {
+            var protoStr = Array.isArray(protocols) ? protocols.join(',') : String(protocols || '');
+            if (protoStr.indexOf('vite-hmr') !== -1 || protoStr.indexOf('vite-ping') !== -1) {
+              var fakeTarget = new EventTarget();
+              fakeTarget.readyState = 1;
+              fakeTarget.send = function () {};
+              fakeTarget.close = function () {};
+              fakeTarget.addEventListener = EventTarget.prototype.addEventListener.bind(fakeTarget);
+              fakeTarget.removeEventListener = EventTarget.prototype.removeEventListener.bind(fakeTarget);
+              fakeTarget.dispatchEvent = EventTarget.prototype.dispatchEvent.bind(fakeTarget);
+              setTimeout(function () {
+                if (typeof fakeTarget.onopen === 'function') fakeTarget.onopen(new Event('open'));
+                fakeTarget.dispatchEvent(new Event('open'));
+              }, 10);
+              return fakeTarget;
+            }
+            return protocols !== undefined ? new NativeWS(url, protocols) : new NativeWS(url);
+          };
+          WrappedWS.prototype = NativeWS.prototype;
+          WrappedWS.CONNECTING = NativeWS.CONNECTING;
+          WrappedWS.OPEN = NativeWS.OPEN;
+          WrappedWS.CLOSING = NativeWS.CLOSING;
+          WrappedWS.CLOSED = NativeWS.CLOSED;
+          window.WebSocket = WrappedWS;
+        }
+      })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#0b0f19" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="كلاكيت فريم" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <title>كلاكيت فريم | Clacket Frame</title>
+    <meta name="description" content="منصة إدارة الإنتاج المرئي والمونتاج وتنسيق فرق التصوير الميداني مع مساعد مونتاج ذكي" />
+    <meta property="og:title" content="كلاكيت فريم | Clacket Frame" />
+    <meta property="og:description" content="منصة إدارة الإنتاج المرئي والمونتاج وتنسيق فرق التصوير الميداني مع مساعد مونتاج ذكي" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  </head>
+  <body class="bg-[#0b0f19] text-[#f1f5f9] antialiased selection:bg-amber-500 selection:text-slate-950">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
