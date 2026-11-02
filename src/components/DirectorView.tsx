@@ -2434,7 +2434,7 @@ export const DirectorView: React.FC<DirectorViewProps> = ({
               {hasUnsavedAdminChanges && (
                 <button
                   type="button"
-                  onClick={handleSaveAdminChanges}
+                  onClick={saveAllAdminChanges}
                   className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-3.5 py-2 rounded-xl text-xs transition cursor-pointer whitespace-nowrap"
                 >
                   💾 حفظ التعديلات الآن
@@ -2498,7 +2498,7 @@ export const DirectorView: React.FC<DirectorViewProps> = ({
                 value={newPhotogPin}
                 onChange={(e) => setNewPhotogPin(e.target.value)}
                 placeholder="الرمز السري (مثال: 0000)"
-                className="w-36 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-center text-white font-mono tabular-nums"
+                className="w-40 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-center text-white tabular-nums"
               />
               <button
                 type="button"
