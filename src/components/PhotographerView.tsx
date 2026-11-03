@@ -408,16 +408,6 @@ export const PhotographerView: React.FC<PhotographerViewProps> = ({
           />
         </div>
 
-        <label className="flex items-center gap-2.5 text-xs text-rose-300 font-bold cursor-pointer bg-rose-950/30 border border-rose-500/30 p-3 rounded-xl">
-          <input
-            type="checkbox"
-            checked={isUrgent}
-            onChange={(e) => setIsUrgent(e.target.checked)}
-            className="w-4 h-4 accent-rose-500 rounded"
-          />
-          <span>🔔 إرسال تنبيه عاجل وتذكير فوري على شاشة المونتير</span>
-        </label>
-
         {formError && (
           <p role="alert" className="text-xs text-rose-400 font-bold">
             ⚠️ {formError}
