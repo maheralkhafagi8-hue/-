@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AppState, IdeaItem, Photographer } from '../types';
 import { createShootRecord } from '../utils/clacketLogic';
+import { playBeep } from '../utils/sound';
 
 interface PhotographerViewProps {
   photographer: Photographer;
@@ -92,6 +93,7 @@ export const PhotographerView: React.FC<PhotographerViewProps> = ({
     });
 
     if (res.ok) {
+      playBeep();
       setField1Value('');
       setField2Value('');
       setIsUrgent(false);
@@ -322,29 +324,6 @@ export const PhotographerView: React.FC<PhotographerViewProps> = ({
         </div>
       )}
 
-      {/* Single Sent Confirmation Message for Photographer */}
-      {sentConfirmation && (
-        <div
-          id="photographerSentConfirm"
-          role="status"
-          className="glass rounded-2xl p-4 border-2 border-emerald-500 bg-emerald-950/40 flex items-center justify-between gap-3"
-        >
-          <div className="flex items-center gap-2.5">
-            <span className="text-2xl">✅</span>
-            <span className="text-sm font-black text-emerald-300">
-              تم الإرسال إلى المونتير
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setSentConfirmation(false)}
-            className="text-xs bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 px-3 py-1 rounded-xl font-bold cursor-pointer"
-          >
-            حسناً
-          </button>
-        </div>
-      )}
-
       {/* New Shoot Submission Form */}
       <form
         onSubmit={handleFormSubmit}
@@ -443,6 +422,29 @@ export const PhotographerView: React.FC<PhotographerViewProps> = ({
           <p role="alert" className="text-xs text-rose-400 font-bold">
             ⚠️ {formError}
           </p>
+        )}
+
+        {/* Single Sent Confirmation Message Directly Above Submit Button */}
+        {sentConfirmation && (
+          <div
+            id="photographerSentConfirm"
+            role="status"
+            className="glass rounded-2xl p-4 border-2 border-emerald-500 bg-emerald-950/40 flex items-center justify-between gap-3"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="text-2xl">✅</span>
+              <span className="text-sm font-black text-emerald-300">
+                تم الإرسال إلى المونتير
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSentConfirmation(false)}
+              className="text-xs bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 px-3 py-1 rounded-xl font-bold cursor-pointer"
+            >
+              حسناً
+            </button>
+          </div>
         )}
 
         <button

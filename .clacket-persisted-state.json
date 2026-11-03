@@ -19,96 +19,96 @@
   "photographers": [
     {
       "name": "حسين الموسوي",
-      "pin": "112233",
-      "specialty": "مصور ميداني",
+      "faceIdEnabled": true,
       "id": "photog-1793625880725",
-      "faceIdEnabled": true
+      "pin": "112233",
+      "specialty": "مصور ميداني"
     },
     {
+      "faceIdEnabled": true,
       "name": "علي الياسري",
       "pin": "332211",
-      "id": "photog-1793628861303",
       "specialty": "مصور ميداني",
-      "faceIdEnabled": true
+      "id": "photog-1793628861303"
     }
   ],
   "shoots": [],
   "ideas": [
     {
       "link": "https://www.instagram.com/reels/",
+      "project": "مجمع ريحانة السكني",
       "createdAt": "2026-10-30",
-      "notes": "تبدأ اللقطة بيد المهندس يمسك الآيباد على المخطط ثم حركة كاميرا سريعة تكشف البناية الحقيقية المكتملة بنفس الزاوية.",
-      "approvedForPhotographers": false,
-      "id": "idea-201",
-      "isCompleted": false,
-      "title": "ترند الانتقال السريع (Match Cut) من المخطط الهندسي إلى الواقع",
       "isSuggestedByApp": true,
-      "project": "مجمع ريحانة السكني"
+      "isCompleted": false,
+      "approvedForPhotographers": false,
+      "title": "ترند الانتقال السريع (Match Cut) من المخطط الهندسي إلى الواقع",
+      "id": "idea-201",
+      "notes": "تبدأ اللقطة بيد المهندس يمسك الآيباد على المخطط ثم حركة كاميرا سريعة تكشف البناية الحقيقية المكتملة بنفس الزاوية."
     },
     {
+      "isSuggestedByApp": true,
+      "isCompleted": false,
       "notes": "تصوير بزاوية واسعة 16mm مع أصوات طبيعية (ASMR) للمياه والأشجار بدون موسيقى صاخبة في أول 5 ثواني.",
       "project": "ريحانة بارك",
-      "id": "idea-202",
-      "isSuggestedByApp": true,
-      "title": "تجربة المشي الصباحي (POV) وسط الحدائق والنافورات",
-      "isCompleted": false,
-      "approvedForPhotographers": false,
+      "approvedForPhotographers": true,
       "createdAt": "2026-10-31",
-      "link": "https://www.tiktok.com/"
+      "link": "https://www.tiktok.com/",
+      "title": "تجربة المشي الصباحي (POV) وسط الحدائق والنافورات",
+      "id": "idea-202"
     },
     {
+      "notes": "ارتفاع تدريجي من 15 متر إلى 80 متر مع تشغيل الإضاءة الليلية للمجمع لعمل Speed Ramp سينمائي.",
       "isSuggestedByApp": true,
-      "title": "لقطة درون عمودية (Top-Down 90°) تكشف تناسق الأبراج السكنية وقت الغروب",
       "createdAt": "2026-11-01",
-      "link": "",
+      "isCompleted": false,
       "project": "مجمع زمزم السكني",
       "approvedForPhotographers": false,
-      "isCompleted": false,
-      "notes": "ارتفاع تدريجي من 15 متر إلى 80 متر مع تشغيل الإضاءة الليلية للمجمع لعمل Speed Ramp سينمائي.",
-      "id": "idea-203"
+      "title": "لقطة درون عمودية (Top-Down 90°) تكشف تناسق الأبراج السكنية وقت الغروب",
+      "id": "idea-203",
+      "link": ""
     },
     {
-      "createdAt": "2026-11-01",
-      "isSuggestedByApp": true,
-      "isCompleted": false,
-      "link": "",
       "notes": "استخدام مثبت Gimbal بحركة سلسة للأمام مع فتح الباب في الثانية الثالثة كـ Hook بصري خاطف.",
-      "id": "idea-204",
+      "isCompleted": false,
+      "createdAt": "2026-11-01",
       "project": "مجمع ريحانة السكني",
+      "link": "",
       "title": "جولة One-Take مستمرة من بوابة المجمع إلى داخل صالة الفيلا النموذجية",
-      "approvedForPhotographers": false
+      "isSuggestedByApp": true,
+      "approvedForPhotographers": false,
+      "id": "idea-204"
     }
   ],
   "audioTasks": [],
   "photographerNotifications": [],
-  "activeReminder": "وصل أوردر مونتاج جديد من (حسين الموسوي) لمشروع (ريحانة بارك): ي",
-  "activeReminderShootId": "shoot-1793662978787-kqx6",
+  "activeReminder": "وصل أوردر مونتاج جديد من (حسين الموسوي) لمشروع (ريحانة بارك): ش",
+  "activeReminderShootId": "shoot-1793664611820-4vk2",
   "reminderSchedule": {
-    "preset": "30",
-    "targetShootId": "shoot-101",
-    "nextTriggerAt": 1793664602945,
     "intervalMinutes": 30,
-    "label": "بعد نصف ساعة"
+    "nextTriggerAt": 1793666409258,
+    "preset": "30",
+    "label": "بعد نصف ساعة",
+    "targetShootId": "shoot-101"
   },
   "counterConfig": {
     "tabTitle": "المنجزات",
     "directorCardTitle": "وحدة منجزاتي الخاصة (المونتير)",
     "directorCustomItems": [
       {
-        "count": 0,
         "id": "dir-ach-1",
+        "count": 0,
         "label": "ريلز إعلاني تم مونتاجه ونشره"
       },
       {
-        "count": 0,
         "id": "dir-ach-2",
-        "label": "فيديوهات تغطية شاملة ومؤثرات"
+        "label": "فيديوهات تغطية شاملة ومؤثرات",
+        "count": 0
       }
     ],
     "photographerCustomFields": [
       {
-        "id": "cfield-1",
-        "name": "لقطات ريلز إبداعية"
+        "name": "لقطات ريلز إبداعية",
+        "id": "cfield-1"
       },
       {
         "name": "تغطية درون جوية",
@@ -120,15 +120,15 @@
         "cfield-1": 3,
         "cfield-2": 1
       },
+      "photog-3": {
+        "cfield-2": 1,
+        "cfield-1": 2
+      },
       "photog-2": {
         "cfield-1": 1,
         "cfield-2": 4
-      },
-      "photog-3": {
-        "cfield-1": 2,
-        "cfield-2": 1
       }
     }
   },
-  "lastUpdated": 1793663784222
+  "lastUpdated": 1793665023821
 }
